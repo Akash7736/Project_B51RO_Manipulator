@@ -34,66 +34,69 @@ def Homo_Matrix(R,d):
     return np.vstack((np.hstack((R, d[:, None])), [0, 0, 0, 1]))
 
 
-def Transformation_Matrix(theta_1, theta_2, theta_3): # Twist, Revolute, Revolute, Revolute-grip
+# def Transformation_Matrix(theta_1, theta_2, theta_3): # Twist, Revolute, Revolute, Revolute-grip
 
-    # theta_1 = 0.0
-    R01 =np.eye(3)  @ Rz(theta_1) 
-    d01 = np.array([0, 0, L0])
-    H01 = Homo_Matrix(R01, d01)
+#     # theta_1 = 0.0
+#     R01 =np.eye(3)  @ Rz(theta_1) 
+#     d01 = np.array([0, 0, L0])
+#     H01 = Homo_Matrix(R01, d01)
 
-    T01 = H01
-    # print("T01:\n", T01)
+#     T01 = H01
+#     # print("T01:\n", T01)
 
-    # theta_2 =  np.pi/2
-    R12 =  np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) @ Rz(theta_2) 
-    d12 = np.array([0, 0, L1])
-    H12 = Homo_Matrix(R12, d12)
-    T12 = H12
-    # print("T02:\n", T01@T12) 
+#     # theta_2 =  np.pi/2
+#     R12 =  np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) @ Rz(theta_2) 
+#     d12 = np.array([0, 0, L1])
+#     H12 = Homo_Matrix(R12, d12)
+#     T12 = H12
+#     # print("T02:\n", T01@T12) 
 
-    # theta_3 = -np.pi/2 
-    R23 = np.eye(3) @ Rz(theta_3)
-    d23 = np.array([L2, 0, 0])
-    H23 = Homo_Matrix(R23, d23)
-    T23 = H23
-    # print("T03:\n", T01@T12@T23)
+#     # theta_3 = -np.pi/2 
+#     R23 = np.eye(3) @ Rz(theta_3)
+#     d23 = np.array([L2, 0, 0])
+#     H23 = Homo_Matrix(R23, d23)
+#     T23 = H23
+#     # print("T03:\n", T01@T12@T23)
 
-    # theta_4 = 0.0
-    R34 =  np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) @ Rz(theta_3) 
-    d34 = np.array([L3+L4, 0, 0])
-    H34 = Homo_Matrix(R34, d34)
-    T34 = H34
-    # print("T04:\n", T01@T12@T23@T34)
-
-
-
-    # print("T06:\n", T01@T12@T23@T34@T45@T56)
-
-    T = T01 @ T12 @ T23 @ T34 
-
-    return T 
+#     # theta_4 = 0.0
+#     R34 =  np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) @ Rz(theta_3) 
+#     d34 = np.array([L3+L4, 0, 0])
+#     H34 = Homo_Matrix(R34, d34)
+#     T34 = H34
+#     # print("T04:\n", T01@T12@T23@T34)
 
 
-# def Transformation_Matrix(theta_1, theta_2, theta_3, theta_4=0.0):
-    
-#     # world → shoulder: pure Z translation (0.1 + 0.011 = 0.111)
-#     H01 = Homo_Matrix(Rz(theta_1), np.array([0.0, 0.0, 0.111]))
 
-#     # shoulder → bicep: offset (-0.05, 0, 0.1), rotates around X
-#     H12 = Homo_Matrix(Rx(theta_2), np.array([-0.05, 0.0, 0.1]))
+#     # print("T06:\n", T01@T12@T23@T34@T45@T56)
 
-#     # bicep → forearm: offset (0.025, 0, 0.15), rotates around X
-#     H23 = Homo_Matrix(Rx(theta_3), np.array([0.025, 0.0, 0.15]))
+#     T = T01 @ T12 @ T23 @ T34 
 
-#     # forearm → gripper1: offset (0, 0.01, 0.125), rotates around Y
-#     H34 = Homo_Matrix(Ry(theta_4), np.array([0.0, 0.01, 0.125]))
+#     return T 
 
-#     # gripper1 → end_effector: fixed offset (0.02, 0, 0.07)
-#     H4e = Homo_Matrix(np.eye(3), np.array([0.02, 0.0, 0.07]))
 
-#     T = H01 @ H12 @ H23 @ H34 @ H4e
-#     return T
+def Transformation_Matrix(theta_1, theta_2, theta_3):
 
+    # Joint 1: shoulder — rotates around Z, offset straight up
+    R01 = Rz(theta_1)
+    d01 = np.array([0.0, 0.0, L0])          # world → shoulder
+    T01 = Homo_Matrix(R01, d01)
+
+    # Joint 2: bicep — rotates around X, offset is (-0.05, 0, 0.1) in shoulder frame
+    R12 = Rx(theta_2)
+    d12 = np.array([-0.05, 0.0, L1])        # shoulder → bicep
+    T12 = Homo_Matrix(R12, d12)
+
+    # Joint 3: forearm — rotates around X, offset is (0.025, 0, 0.15) in bicep frame
+    R23 = Rx(theta_3)
+    d23 = np.array([0.025, 0.0, L2])        # bicep → forearm
+    T23 = Homo_Matrix(R23, d23)
+
+    # Fixed: forearm → end_effector (0.02, 0, 0.190) in forearm frame
+    R3e = np.eye(3)
+    d3e = np.array([0.02, 0.0, L3 + L4])   # forearm → end effector
+    T3e = Homo_Matrix(R3e, d3e)
+
+    return T01 @ T12 @ T23 @ T3e
 
 def fk(thetas):
     """Forward kinematics: returns end-effector (x, y, z) position."""
@@ -161,7 +164,7 @@ def inverse_kinematics(
     target = np.array(target_pos, dtype=float)
 
     if theta_init is None:
-        thetas = np.zeros(5)
+        thetas = np.zeros(3)
     else:
         thetas = np.array(theta_init, dtype=float)
 
@@ -222,6 +225,52 @@ def workspace_sample(n=500, seed=42):
     rng = np.random.default_rng(seed)
     angles = rng.uniform(-np.pi, np.pi, size=(n, 5))
     return np.array([fk(a) for a in angles])
+
+
+
+def quintic_trajectory(q_start, q_end, T, dt):
+    """
+    Generates a quintic (5th order) polynomial trajectory between two joint configurations.
+    Guarantees: position, velocity, AND acceleration continuity (zero at start and end).
+    
+    Args:
+        q_start : np.array — starting joint angles (radians)
+        q_end   : np.array — target joint angles (radians)
+        T       : float    — total movement duration (seconds)
+        dt      : float    — timestep (seconds), use model.opt.timestep
+    
+    Returns:
+        positions     : (N, DOF) array of joint angles over time
+        velocities    : (N, DOF) array of joint velocities over time
+        accelerations : (N, DOF) array of joint accelerations over time
+    """
+    q_start = np.array(q_start)
+    q_end   = np.array(q_end)
+    
+    time_steps = np.arange(0, T + dt, dt)
+    N   = len(time_steps)
+    DOF = len(q_start)
+    
+    positions     = np.zeros((N, DOF))
+    velocities    = np.zeros((N, DOF))
+    accelerations = np.zeros((N, DOF))
+    
+    for i, t in enumerate(time_steps):
+        # Normalized time [0, 1]
+        tau = t / T
+        tau = np.clip(tau, 0.0, 1.0)
+        
+        # Quintic basis polynomials
+        # These satisfy: s(0)=0, s(1)=1, s'(0)=s'(1)=0, s''(0)=s''(1)=0
+        s     =  10*tau**3 - 15*tau**4 + 6*tau**5
+        s_dot = (30*tau**2 - 60*tau**3 + 30*tau**4) / T
+        s_ddot= (60*tau    - 180*tau**2 + 120*tau**3) / T**2
+        
+        positions[i]     = q_start + (q_end - q_start) * s
+        velocities[i]    = (q_end - q_start) * s_dot
+        accelerations[i] = (q_end - q_start) * s_ddot
+    
+    return positions, velocities, accelerations
 
 
 # ─── Test: IK with FK validation ──────────────────────────────────────────────

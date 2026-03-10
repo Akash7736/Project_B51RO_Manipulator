@@ -92,6 +92,98 @@ def run_passive():
             viewer.sync()
             time.sleep(model.opt.timestep)  # sync sleep to timestep
 
+def is_reachable(target_pos, tolerance=0.03):
+    pts = []
+    for t1 in np.linspace(-np.pi, np.pi, 20):
+        for t2 in np.linspace(-np.pi, np.pi, 20):
+            for t3 in np.linspace(-np.pi, np.pi, 20):
+                pts.append(ik.fk([t1, t2, t3]))
+    pts = np.array(pts)
+    dist = np.linalg.norm(pts - np.array(target_pos), axis=1).min()
+    return dist < tolerance, dist
+
+
+
+def run_with_control():
+    JOINT_LIMITS = [
+        (-np.pi,     np.pi),
+        (-np.pi/2,   np.pi/2),
+        (-np.pi/2,   np.pi/2),
+    ]
+
+    target_pos = [0.2, 0.1, 0.4]
+    # target_pos = [0.3, 0.1, 0.5]  
+        # Then before calling IK:
+    reachable, dist = is_reachable(target_pos)
+    if not reachable:
+        print(f"Target unreachable — closest point is {dist:.4f}m away")
+        return
+    
+      
+    solved3, hist3, ok3 = ik.inverse_kinematics(
+        target_pos=target_pos,
+        theta_init=None,
+        max_iter=15000,
+        alpha=0.005,
+        tol=1e-5,
+        joint_limits=JOINT_LIMITS,
+    )
+    print(f"\nIK solved: {ok3} in {len(hist3)} iterations")
+    target_positions = np.array(solved3)
+    achieved3 = ik.fk(solved3)
+    print("\n=== IK Solution for Target Position", target_pos, "===")
+    for i, angle in enumerate(target_positions):
+        print(f"  Joint {i+1}: {angle:.4f} rad  ({np.degrees(angle):.2f}°)")
+    print(f"  Achieved position: {achieved3}")
+
+    # ── Trajectory Setup ──────────────────────────────────────────
+    dt          = model.opt.timestep
+    print(f"\nSimulation timestep: {dt:.4f} seconds")
+    T_move      = 10.0   # seconds to complete the motion — tune this
+    
+    # Start from wherever the joints currently are
+    q_start = data.qpos[:3].copy()
+    q_end   = target_positions
+
+    positions, velocities, _ = ik.quintic_trajectory(q_start, q_end, T_move, dt)
+    
+    print(f"\nTrajectory: {len(positions)} steps over {T_move}s")
+    # ─────────────────────────────────────────────────────────────
+
+    print_flag  = True
+    traj_idx    = 0
+    sim_start   = time.time()
+
+    with mujoco.viewer.launch_passive(model, data) as viewer:
+        print("\nRunning with trajectory control...")
+        start = time.time()
+
+        while viewer.is_running() and time.time() - start < 180:
+            
+            # ── Feed trajectory setpoint ──────────────────────────
+            if traj_idx < len(positions):
+                # print("pOSITIONS")
+                data.ctrl[:3] = positions[traj_idx]
+                traj_idx += 1
+            else:
+                # Hold final position once trajectory is complete
+                data.ctrl[:3] = q_end
+            # ─────────────────────────────────────────────────────
+
+            mujoco.mj_step(model, data)
+            curr_time = time.time() - sim_start
+
+            # if curr_time > T_move + 1.0 and print_flag:
+            gripper_pos = get_body_pos(data, "end_effector")
+            print("End effector position:", gripper_pos)
+            print(f"target position: {target_pos}  |  error: {np.linalg.norm(gripper_pos - target_pos):.5f}")
+            
+                # print_flag = False
+
+            viewer.sync()
+            time.sleep(dt)
+
+
 if __name__ == "__main__":
     # Reset simulation to initial state
     print("initial data.ctrl : ", data.ctrl)
@@ -138,4 +230,5 @@ if __name__ == "__main__":
     print("\n=== FK at zero angles ===")
     print(ik.fk([0, 0, 0]))
     # run_passive()         # just let it fall under gravity
-    check_fk()            # test FK with random joint angles
+    # check_fk()            # test FK with random joint angles
+    run_with_control()     # test IK + trajectory control to target position
