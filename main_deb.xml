@@ -1,0 +1,136 @@
+<mujoco model="Robot Arm">
+
+
+    <default>
+        <default class="joint" >
+            <joint damping="1" />
+        </default>
+
+    </default>
+
+
+    <visual>
+        <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+        <rgba haze="0.15 0.25 0.35 1" />
+        <global azimuth="-130" elevation="-60" />
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="1 1 1" width="512"
+            height="3072" />
+        <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4"
+            rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300" />
+        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"
+            reflectance="0.2" />
+    </asset>
+
+
+    <asset>
+        <model name="Base" file="models/Base.xml" />
+        <model name="Shoulder" file="models/Shoulder.xml" />
+        <model name="Bicep" file="models/Bicep.xml" />
+        <model name="ForeArm" file="models/ForeArm.xml" />
+        <model name="Gripper" file="models/Gripper.xml" />
+
+    </asset>
+
+
+
+
+    <worldbody>
+
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
+
+    
+    <!-- X axis - Red -->
+<geom name="axis_x" type="cylinder" 
+      fromto="0 0 0.080  0.3 0 0.080" 
+      size="0.004" 
+      rgba="1 0 0 1" 
+      contype="0" conaffinity="0" />
+<geom name="axis_x_tip" type="sphere"
+      pos="0.3 0 0.080"
+      size="0.008"
+      rgba="1 0 0 1"
+      contype="0" conaffinity="0" />
+
+<!-- Y axis - Green -->
+<geom name="axis_y" type="cylinder" 
+      fromto="0 0 0.080  0 0.3 0.080" 
+      size="0.004" 
+      rgba="0 1 0 1" 
+      contype="0" conaffinity="0" />
+<geom name="axis_y_tip" type="sphere"
+      pos="0 0.3 0.080"
+      size="0.008"
+      rgba="0 1 0 1"
+      contype="0" conaffinity="0" />
+
+<!-- Z axis - Blue -->
+<geom name="axis_z" type="cylinder" 
+      fromto="0 0 0.080  0 0 0.480" 
+      size="0.004" 
+      rgba="0 0 1 1" 
+      contype="0" conaffinity="0" />
+<geom name="axis_z_tip" type="sphere"
+      pos="0 0 0.480"
+      size="0.008"
+      rgba="0 0 1 1"
+      contype="0" conaffinity="0" />
+
+<!-- Origin sphere -->
+<geom name="origin" type="sphere"
+      pos="0 0 0.080"
+      size="0.008"
+      rgba="1 1 1 1"
+      contype="0" conaffinity="0" />
+    
+    </worldbody>
+
+    <worldbody>
+        <body pos="0 0 0.1">
+            <attach model="Base" body="Base" prefix="base_" />
+            <body pos="0 0 0.011">
+                <attach model="Shoulder" body="Shoulder" prefix="shoulder_" />
+                <joint class="joint" name="joint_shoulder" type="hinge" axis="0 0 1" range="-3.14159 3.14159"  />
+                <body pos="-0.05 0.0 0.1">
+                    <attach model="Bicep" body="Bicep" prefix="bicep_" />
+                    <joint class="joint" name="joint_bicep" type="hinge" axis="1 0 0" range="-1.5708 1.5708" />
+                    <body pos="0.025 0.0 0.15" >
+                        <attach model="ForeArm" body="ForeArm" prefix="forearm_" />
+                        <joint class="joint" name="joint_forearm" type="hinge" axis="1 0 0" range="-1.5708 1.5708" />
+                        <body pos="0.0 0.01 0.125">
+                            <attach model="Gripper" body="Gripper1" prefix="gripper1_" />
+                          
+                            <joint class="joint" name="joint_gripper1" type="hinge" axis="0 1 0" range="-0.5 0.5" />
+                            <body pos="0.04 -0.01 0.0">
+                              <attach model="Gripper" body="Gripper2" prefix="gripper2_" />
+                              <joint class="joint" name="joint_gripper2" type="hinge" axis="0 1 0" range="-0.5 0.5" />
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+
+    </worldbody>
+
+
+    <tendon>
+        <fixed name="gripper_tendon">
+            <joint joint="joint_gripper1" coef="1" />
+            <joint joint="joint_gripper2" coef="-1" />
+        </fixed>
+    </tendon>
+
+
+    <actuator>
+        <position name="shoulder_pos" joint="joint_shoulder" kp="100" />
+        <position name="bicep_pos" joint="joint_bicep" kp="100" />
+        <position name="forearm_pos" joint="joint_forearm" kp="100" />
+        <position name="gripper_pos" tendon="gripper_tendon" kp="100" />
+    </actuator>
+
+
+</mujoco>

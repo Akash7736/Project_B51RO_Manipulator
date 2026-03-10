@@ -1,0 +1,25 @@
+<mujoco>
+    <compiler meshdir="../meshes/Bicep" />
+
+    <include file="materials.xml" />
+
+    <default>
+        <default class="visual">
+            <geom pos="0.0 0.0 0.0" euler="0 0 0" />
+            <!-- <geom pos="0.3 0.0 0.2" euler="0 0 0" /> -->
+        </default>
+    </default>
+
+    
+
+    <asset>
+        <mesh name="Bicep" file="Bicep.stl" scale="2.0 2.0 2.0" />
+    </asset>
+
+    <worldbody>
+        <body name="Bicep" pos="0 0 0.0">
+            <geom type="mesh" mesh="Bicep" class="visual" material="blue" mass="0.2" contype="1" conaffinity="1"  />
+
+        </body>
+    </worldbody>
+</mujoco>

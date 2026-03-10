@@ -1,0 +1,25 @@
+<mujoco>
+    <compiler meshdir="../meshes/ForeArm" />
+
+    <include file="materials.xml" />
+
+    <default>
+        <default class="visual">
+            <geom pos="0.0 0.0 0.0" euler="-90 0 0" />
+            <!-- <geom pos="0.3 0.0 0.2" euler="0 0 0" /> -->
+        </default>
+    </default>
+
+    
+
+    <asset>
+        <mesh name="ForeArm" file="ForeArm.stl" scale="2.0 2.0 2.0" />
+    </asset>
+
+    <worldbody>
+        <body name="ForeArm" pos="0 0 0.0">
+            <geom type="mesh" mesh="ForeArm" class="visual" material="black" mass="0.2" contype="1" conaffinity="1"  />
+
+        </body>
+    </worldbody>
+</mujoco>
