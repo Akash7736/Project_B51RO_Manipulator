@@ -110,7 +110,7 @@
                 <site name="bicep_y" type="cylinder" fromto="0 0 0  0 0.03 0"   size="0.003" material="green"/>
                 <site name="bicep_z" type="cylinder" fromto="0 0 0  0 0 0.03"   size="0.003" material="blue"/>
 
-                <body pos="0.025 0.0 0.15">
+                <body pos="0.025 0.0 0.15" >
                     <attach model="ForeArm" body="ForeArm" prefix="forearm_" />
                     <joint class="joint" name="joint_forearm" type="hinge" axis="1 0 0" range="-3.14159 3.14159" limited="true"/>
                     <!-- ForeArm joint axes -->
@@ -119,7 +119,7 @@
                     <site name="forearm_z" type="cylinder" fromto="0 0 0  0 0 0.03"  size="0.003" material="blue"/>
 
               <!-- End effector body — adjust pos/quat to match your desired TCP offset -->
-                        <body name="end_effector" pos="0.0 0.0 0.195" euler="0 0 0">
+                        <body name="end_effector" pos="0.02 0.0 0.195" euler="0 0 0">
                             <!-- RGB axis marker -->
                             <site name="ee_x" type="cylinder" fromto="0 0 0  0.04 0 0"   size="0.004" material="red"/>
                             <site name="ee_y" type="cylinder" fromto="0 0 0  0 0.04 0"   size="0.004" material="green"/>
@@ -127,25 +127,28 @@
                             <!-- Named site for reading pose in code -->
                             <site name="end_effector_site" type="sphere" size="0.008" rgba="1 1 0 1"/>
                         </body>
+          
 
                     <body pos="0.0 0.01 0.125">
                         <attach model="Gripper" body="Gripper1" prefix="gripper1_" />
-                        <joint class="joint" name="joint_gripper1" type="hinge" axis="0 1 0" range="-0.5 0.5"/>
+                        <joint class="joint" name="joint_gripper1" type="hinge" axis="0 1 0" range="-0.01 0.01"/>
                         <!-- Gripper1 joint axes -->
                         <site name="gripper1_x" type="cylinder" fromto="0 0 0  0.03 0 0"  size="0.003" material="red"/>
                         <site name="gripper1_y" type="cylinder" fromto="0 0 0  0 0.03 0"  size="0.003" material="green"/>
                         <site name="gripper1_z" type="cylinder" fromto="0 0 0  0 0 0.03"  size="0.003" material="blue"/>
 
 
+
+
                     <body pos="0.04 -0.01 0.0">
                         <attach model="Gripper" body="Gripper2" prefix="gripper2_" />
-                        <joint class="joint" name="joint_gripper2" type="hinge" axis="0 1 0" range="-0.5 0.5"/>
+                        <joint class="joint" name="joint_gripper2" type="hinge" axis="0 1 0" range="-0.01 0.01"/>
                         <!-- Gripper2 joint axes -->
                         <site name="gripper2_x" type="cylinder" fromto="0 0 0  0.03 0 0"  size="0.003" material="red"/>
                         <site name="gripper2_y" type="cylinder" fromto="0 0 0  0 0.03 0"  size="0.003" material="green"/>
                         <site name="gripper2_z" type="cylinder" fromto="0 0 0  0 0 0.03"  size="0.003" material="blue"/>
 
-          
+
                           </body>
                     </body>
                 </body>
@@ -154,7 +157,6 @@
     </body>
 </worldbody>
 
-
     <tendon>
         <fixed name="gripper_tendon">
             <joint joint="joint_gripper1" coef="1" />
@@ -162,12 +164,10 @@
         </fixed>
     </tendon>
 
-
-<actuator>
-    <position name="shoulder_pos" joint="joint_shoulder" kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
-    <position name="bicep_pos"    joint="joint_bicep"    kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
-    <position name="forearm_pos"  joint="joint_forearm"  kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
-    <position name="gripper_pos"  tendon="gripper_tendon" kp="300" kv="0" />
-</actuator>
-
+    <actuator>
+        <position name="shoulder_pos" joint="joint_shoulder" kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
+        <position name="bicep_pos"    joint="joint_bicep"    kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
+        <position name="forearm_pos"  joint="joint_forearm"  kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
+        <position name="gripper_pos"  tendon="gripper_tendon" kp="300" kv="0" ctrlrange="-0.5 0.5" />
+    </actuator>
 </mujoco>

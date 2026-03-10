@@ -1,5 +1,5 @@
 <mujoco>
-    <compiler meshdir="../meshes/Base" />
+    <compiler meshdir="../meshes/Base" angle="radian" />
 
     <include file="materials.xml" />
 

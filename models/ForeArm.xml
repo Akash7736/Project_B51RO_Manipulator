@@ -1,11 +1,12 @@
 <mujoco>
-    <compiler meshdir="../meshes/ForeArm" />
+    <compiler meshdir="../meshes/ForeArm" angle="radian"/>
 
     <include file="materials.xml" />
 
     <default>
         <default class="visual">
-            <geom pos="0.0 0.0 0.0" euler="-90 0 0" />
+            <!-- <geom pos="0.0 0.0 0.0" euler="-90 0 0" /> -->
+            <geom euler="-1.5708 0 0" />
             <!-- <geom pos="0.3 0.0 0.2" euler="0 0 0" /> -->
         </default>
     </default>

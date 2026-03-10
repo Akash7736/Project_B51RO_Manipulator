@@ -34,6 +34,12 @@ def check_fk():
     theta_2 = np.pi/2
     theta_3 = -np.pi/2
 
+
+    # theta_1 = 0
+    # theta_2 = 0
+    # theta_3 = 0
+
+
     print(f"Testing FK with random joint angles:")
     print(f"  theta_1 (shoulder): {theta_1:.3f} rad")
     print(f"  theta_2 (bicep):   {theta_2:.3f} rad")
@@ -63,11 +69,21 @@ def check_fk():
 
 
 def run_passive():
+        # Run this to get the quat of gripper when it WAS correct (comment out compiler line temporarily)
+
+    g1_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "gripper1_Gripper1")
+    print("gripper1 xquat:", data.xquat[g1_id])  # w, x, y, z
+    for i in range(model.nbody):
+        name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, i)
+        if name and 'gripper' in name.lower():
+            print(f"\n{name}:")
+            print(f"  pos:  {data.xpos[i]}")
+            print(f"  xmat: {data.xmat[i].reshape(3,3)}")
     with mujoco.viewer.launch_passive(model, data) as viewer:  # 👈 launch_passive, not launch
         print("\nRunning simulation with control panel...")
         start = time.time()
         while viewer.is_running() and time.time() - start < 180:
-            # data.ctrl[:] = [np.pi/2, np.pi/2, -np.pi/2, 0]
+            # data.ctrl[:] = [0 ,0 , 0, 0]
             mujoco.mj_step(model, data)
 
             # print("ctrl (target) :", data.ctrl[0])       # what you set
