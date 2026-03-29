@@ -89,7 +89,55 @@
       size="0.008"
       rgba="1 1 1 1"
       contype="0" conaffinity="0" />
-    
+
+      
+    <!-- Cylindrical block in the world
+    <body name="cylinder_block" pos="0.25 0.25 0.1">
+        <joint type="free" />
+        <geom type="cylinder" 
+              size="0.03 0.05"
+              rgba="0.2 0.6 1.0 1"
+              mass="0.5"
+              friction="2.0 0.05 0.001" />
+    </body>
+     -->
+
+<!-- <body name="box_block" pos="0.25 0.25 0.1"> -->
+<body name="box_block" pos="0.0 0.25 0.1">
+    <joint type="free" />
+    <geom type="box" 
+          size="0.03 0.03 0.09"
+          rgba="1.0 0.3 0.0 1"
+          mass="0.5"
+          friction="2.0 0.05 0.001" />
+</body>
+
+<body name="camera_mount_3" pos="0.0 0.40 0.3" euler="-0.785 0 0">
+    <geom type="box" 
+          size="0.025 0.015 0.010"
+          rgba="0.9 0.1 0.1 1"
+          mass="0"
+          contype="0" conaffinity="0" />
+
+    <!-- black face on the -Z (front/optical) side -->
+    <geom type="box"
+          size="0.025 0.015 0.0005"
+          pos="0 0 -0.0105"
+          rgba="0 0 0 1"
+          mass="0"
+          contype="0" conaffinity="0" />
+
+    <camera name="base_cam_3" pos="0 0 0" euler="0 0 3.14" fovy="120" />
+    <site name="cam3_opt_x" type="cylinder" fromto="0 0 0  0.03 0 0"  size="0.002" rgba="1 0 0 0.4"/>
+    <site name="cam3_opt_y" type="cylinder" fromto="0 0 0  0 0.03 0"  size="0.002" rgba="0 1 0 0.4"/>
+    <site name="cam3_opt_z" type="cylinder" fromto="0 0 0  0 0 0.03" size="0.002" rgba="0 0 1 0.4"/>
+
+</body>
+
+
+
+
+
     </worldbody>
 <worldbody>
     <body pos="0 0 0.1">
@@ -168,6 +216,6 @@
         <position name="shoulder_pos" joint="joint_shoulder" kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
         <position name="bicep_pos"    joint="joint_bicep"    kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
         <position name="forearm_pos"  joint="joint_forearm"  kp="300" kv="0" ctrlrange="-3.14159 3.14159" />
-        <position name="gripper_pos"  tendon="gripper_tendon" kp="300" kv="0" ctrlrange="-0.5 0.5" />
+        <position name="gripper_pos"  tendon="gripper_tendon" kp="25" kv="0" ctrlrange="-0.5 0.5" />
     </actuator>
 </mujoco>

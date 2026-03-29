@@ -6,7 +6,7 @@ import numpy as np
 import time
 import dim
 import ik
-
+from detect import *
 
 model = mujoco.MjModel.from_xml_path("main.xml")
 data = mujoco.MjData(model)
@@ -20,6 +20,54 @@ print(f"Number of bodies: {model.nbody}")
 def get_body_pos(data, body_name):
     body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
     return data.xpos[body_id].copy()
+
+
+
+# def localize_block(image_bgr, R_cam, t_cam, fovy=120, img_w=640, img_h=480):
+#     # 1. Detect
+#     result = detect_block_2d(image_bgr)
+#     if result is None:
+#         return None
+#     cx, cy, w, h = result
+
+#     # 2. Depth from known size
+#     depth = estimate_depth_from_size(h, real_height=0.09, fovy_deg=fovy, img_height=img_h)
+
+#     # 3. 2D → 3D cam frame
+#     p_cam = pixel_to_cam_frame(cx, cy, depth, fovy, img_w, img_h)
+
+#     # 4. Cam → world
+#     p_world = cam_to_world(p_cam, R_cam, t_cam)
+
+#     return p_world
+
+def localize_block(image_bgr, R_cam, t_cam, fovy=90, img_w=640, img_h=480):
+    result = detect_block_2d(image_bgr)
+    if result is None:
+        return None
+    cx, cy, w, h = result
+
+    # Use bottom center — where block meets ground
+    cx_base = cx
+    cy_base = cy + h // 2
+
+    # Compute depth from pixel row using camera height
+    depth = pixel_row_to_depth(cy_base, t_cam, R_cam, fovy_deg=fovy, img_h=img_h)
+    if depth is None:
+        print("Pixel above horizon, can't compute depth")
+        return None
+    
+    print(f"Estimated depth from row geometry: {depth:.4f}m")
+
+    # Back-project to 3D
+    p_cam = pixel_to_cam_frame(cx_base, cy_base, depth, fovy, img_w, img_h)
+    p_world = cam_to_world(p_cam, R_cam, t_cam)
+
+    # Override Z with known block center height
+    p_world[2] = 0.09   # block half-height
+
+    return p_world
+
 
 
 def check_fk():
@@ -104,6 +152,87 @@ def is_reachable(target_pos, tolerance=0.03):
 
 
 
+# def run_with_control():
+#     JOINT_LIMITS = [
+#         (-np.pi,     np.pi),
+#         (-np.pi/2,   np.pi/2),
+#         (-np.pi/2,   np.pi/2),
+#     ]
+
+#     target_pos = [0.25, 0.25, 0.1]
+#     # target_pos = [0.3, 0.1, 0.5]  
+#         # Then before calling IK:
+#     reachable, dist = is_reachable(target_pos)
+#     if not reachable:
+#         print(f"Target unreachable — closest point is {dist:.4f}m away")
+#         return
+    
+      
+#     solved3, hist3, ok3 = ik.inverse_kinematics(
+#         target_pos=target_pos,
+#         theta_init=None,
+#         max_iter=15000,
+#         alpha=0.005,
+#         tol=1e-5,
+#         joint_limits=JOINT_LIMITS,
+#     )
+#     print(f"\nIK solved: {ok3} in {len(hist3)} iterations")
+#     target_positions = np.array(solved3)
+#     achieved3 = ik.fk(solved3)
+#     print("\n=== IK Solution for Target Position", target_pos, "===")
+#     for i, angle in enumerate(target_positions):
+#         print(f"  Joint {i+1}: {angle:.4f} rad  ({np.degrees(angle):.2f}°)")
+#     print(f"  Achieved position: {achieved3}")
+
+#     # ── Trajectory Setup ──────────────────────────────────────────
+#     dt          = model.opt.timestep
+#     print(f"\nSimulation timestep: {dt:.4f} seconds")
+#     T_move      = 10.0   # seconds to complete the motion — tune this
+    
+#     # Start from wherever the joints currently are
+#     q_start = data.qpos[:3].copy()
+#     q_end   = target_positions
+
+#     positions, velocities, _ = ik.quintic_trajectory(q_start, q_end, T_move, dt)
+    
+#     print(f"\nTrajectory: {len(positions)} steps over {T_move}s")
+#     # ─────────────────────────────────────────────────────────────
+
+#     print_flag  = True
+#     traj_idx    = 0
+#     sim_start   = time.time()
+
+#     with mujoco.viewer.launch_passive(model, data) as viewer:
+#         print("\nRunning with trajectory control...")
+#         start = time.time()
+
+#         while viewer.is_running() and time.time() - start < 180:
+            
+#             # ── Feed trajectory setpoint ──────────────────────────
+#             if traj_idx < len(positions):
+#                 # print("pOSITIONS")
+#                 data.ctrl[:3] = positions[traj_idx]
+#                 traj_idx += 1
+#             else:
+#                 # Hold final position once trajectory is complete
+#                 data.ctrl[:3] = q_end
+#                 data.ctrl[3] = 0.5  # open gripper
+#             # ─────────────────────────────────────────────────────
+
+#             mujoco.mj_step(model, data)
+#             curr_time = time.time() - sim_start
+
+#             # if curr_time > T_move + 1.0 and print_flag:
+#             gripper_pos = get_body_pos(data, "end_effector")
+#             print("End effector position:", gripper_pos)
+#             print(f"target position: {target_pos}  |  error: {np.linalg.norm(gripper_pos - target_pos):.5f}")
+            
+#                 # print_flag = False
+
+#             viewer.sync()
+#             time.sleep(dt)
+
+
 def run_with_control():
     JOINT_LIMITS = [
         (-np.pi,     np.pi),
@@ -111,15 +240,50 @@ def run_with_control():
         (-np.pi/2,   np.pi/2),
     ]
 
-    target_pos = [0.2, 0.1, 0.4]
-    # target_pos = [0.3, 0.1, 0.5]  
-        # Then before calling IK:
+    # ── Setup renderer ────────────────────────────────────────────
+    renderer = mujoco.Renderer(model, height=480, width=640)
+
+    # ── Get cam3 extrinsics (fixed camera, so get once) ───────────
+    mujoco.mj_forward(model, data)
+    cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "base_cam_3")
+    R_cam  = data.cam_xmat[cam_id].reshape(3, 3).copy()
+    t_cam  = data.cam_xpos[cam_id].copy()
+
+    # ── Localize block from camera ────────────────────────────────
+    renderer.update_scene(data, camera="base_cam_3")
+    image_rgb = renderer.render()
+    image_bgr = image_rgb[:, :, ::-1]  # RGB → BGR for OpenCV
+    cv2.imwrite("rendered_view.png", image_bgr)  # save for debugging
+
+    target_pos_est = localize_block(image_bgr, R_cam, t_cam, fovy=120, img_w=640, img_h=480)
+    if target_pos_est is None:
+        print("Block not detected! Saving debug image...")
+        cv2.imwrite("debug_detection.png", image_bgr)
+        return
+    print(f"Estimated block position from camera: {np.round(target_pos_est, 4)}")
+    target_pos = [0.25, 0.25, 0.1]
+
+    if target_pos_est is None:
+        print("Block not detected! Check debug_detection.png")
+        return  # ← add this guard before any np.round
+        
+
+    if target_pos is None:
+        print("Block not detected in camera view!")
+        return
+
+    # ── Validation: compare against ground truth in sim ──────────
+    gt_pos = get_body_pos(data, "box_block")
+    print(f"Target pos center of Body: {np.round(target_pos, 4)}")
+    print(f"Ground truth origin of Body  : {np.round(gt_pos, 4)}")
+    print(f"Localization error: {np.linalg.norm(target_pos - gt_pos):.4f} m")
+
+    # ── rest is same as before ────────────────────────────────────
     reachable, dist = is_reachable(target_pos)
     if not reachable:
         print(f"Target unreachable — closest point is {dist:.4f}m away")
         return
-    
-      
+
     solved3, hist3, ok3 = ik.inverse_kinematics(
         target_pos=target_pos,
         theta_init=None,
@@ -130,56 +294,30 @@ def run_with_control():
     )
     print(f"\nIK solved: {ok3} in {len(hist3)} iterations")
     target_positions = np.array(solved3)
-    achieved3 = ik.fk(solved3)
-    print("\n=== IK Solution for Target Position", target_pos, "===")
-    for i, angle in enumerate(target_positions):
-        print(f"  Joint {i+1}: {angle:.4f} rad  ({np.degrees(angle):.2f}°)")
-    print(f"  Achieved position: {achieved3}")
 
-    # ── Trajectory Setup ──────────────────────────────────────────
-    dt          = model.opt.timestep
-    print(f"\nSimulation timestep: {dt:.4f} seconds")
-    T_move      = 10.0   # seconds to complete the motion — tune this
-    
-    # Start from wherever the joints currently are
+    dt     = model.opt.timestep
+    T_move = 10.0
     q_start = data.qpos[:3].copy()
     q_end   = target_positions
-
     positions, velocities, _ = ik.quintic_trajectory(q_start, q_end, T_move, dt)
-    
-    print(f"\nTrajectory: {len(positions)} steps over {T_move}s")
-    # ─────────────────────────────────────────────────────────────
 
-    print_flag  = True
-    traj_idx    = 0
-    sim_start   = time.time()
+    traj_idx = 0
 
     with mujoco.viewer.launch_passive(model, data) as viewer:
         print("\nRunning with trajectory control...")
         start = time.time()
 
         while viewer.is_running() and time.time() - start < 180:
-            
-            # ── Feed trajectory setpoint ──────────────────────────
             if traj_idx < len(positions):
-                # print("pOSITIONS")
                 data.ctrl[:3] = positions[traj_idx]
                 traj_idx += 1
             else:
-                # Hold final position once trajectory is complete
                 data.ctrl[:3] = q_end
-            # ─────────────────────────────────────────────────────
+                data.ctrl[3] = 0.5
 
             mujoco.mj_step(model, data)
-            curr_time = time.time() - sim_start
-
-            # if curr_time > T_move + 1.0 and print_flag:
             gripper_pos = get_body_pos(data, "end_effector")
-            print("End effector position:", gripper_pos)
-            print(f"target position: {target_pos}  |  error: {np.linalg.norm(gripper_pos - target_pos):.5f}")
-            
-                # print_flag = False
-
+            # print(f"EE: {np.round(gripper_pos,4)}  target: {np.round(target_pos,4)}  err: {np.linalg.norm(gripper_pos - target_pos):.4f}")
             viewer.sync()
             time.sleep(dt)
 
@@ -215,7 +353,7 @@ if __name__ == "__main__":
         name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, i)
         print(f"{i} {name}: range={model.jnt_range[i]}")
 
-    data.ctrl[:] = [0, 0, 0, 0]
+    data.ctrl[:] = [0, 0, 0, -0.5]
     for i in range(2000):
         mujoco.mj_step(model, data)
 

@@ -24,13 +24,13 @@
         
         <!-- <body name="Gripper1"  pos="0.0 0.0 0.0" > -->
              <!-- <geom type="mesh" mesh="Gripper1" class="visual" material="brown" mass="0.2" contype="1" conaffinity="1"  /> -->
-            <geom type="mesh" mesh="Gripper1" class="visual" material="silver" mass="0.1" contype="1" conaffinity="1"  />
+            <geom type="mesh" mesh="Gripper1" class="visual" material="silver" mass="0.1" contype="1" conaffinity="1" friction="2.0 0.05 0.001" condim="4" />
         </body>
         <!-- <body name="Gripper2" pos="0 0 0.0" euler="90 180 30"> -->
         <body name="Gripper2" pos="0 0 0.0" euler="1.57 3.14 0.5">
         <!-- <body name="Gripper2" pos="0 0 0.0" quat="-0.20462758 -0.20462269 -0.67684386 0.67686003"> -->
         <!-- <body name="Gripper2" pos="0.0 0.0 0.0"> -->
-            <geom type="mesh" mesh="Gripper2" class="visual" material="brown" mass="0.1" contype="1" conaffinity="1"  />
+            <geom type="mesh" mesh="Gripper2" class="visual" material="brown" mass="0.1" contype="1" conaffinity="1" friction="2.0 0.05 0.001" condim="4" />
         </body>
     </worldbody>
 </mujoco>

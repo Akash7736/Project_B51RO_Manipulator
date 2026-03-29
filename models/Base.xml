@@ -20,6 +20,13 @@
         <mesh name="Base_wood_visual" file="Base_wood.STL" /> -->
     </asset>
 
+<asset>
+    <material name="red_cam"   rgba="1 0 0 1"/>
+    <material name="green_cam" rgba="0 1 0 1"/>
+    <material name="blue_cam"  rgba="0 0 1 1"/>
+</asset>
+
+
     <worldbody>
         <body name="Base">
             <geom type="mesh" mesh="Base" class="visual" material="deep_black" mass="0.5" contype="1" conaffinity="1"  />
@@ -30,16 +37,23 @@
                     <!-- Camera on the base stand, looking forward (+X direction) -->
               <!-- Camera body: red rectangular box as visual -->
 
-        <!-- <body name="camera_mount" pos="0.08 0 0.05" euler="0 0 0">
-            <geom type="box" 
-                  size="0.015 0.025 0.010"
-                  rgba="0.9 0.1 0.1 1"
-                  mass="0"
-                  contype="0" conaffinity="0" />
-         
-            <camera name="base_cam" pos="0 0 0" euler="90 -90 0" fovy="120" />
-        </body> -->
+
+
+    <!-- <body name="cam1_optical" pos="0.10 0.10 0.25" euler="0 0 0">
+        <camera name="base_cam_1" pos="0 0 0" euler="0 0 0" fovy="120" />
+      
+        <site name="cam1_opt_x" type="cylinder" fromto="0 0 0  0.03 0 0" size="0.002" rgba="1 0 0 0.4"/>
+        <site name="cam1_opt_y" type="cylinder" fromto="0 0 0  0 0.03 0" size="0.002" rgba="0 1 0 0.4"/>
+        <site name="cam1_opt_z" type="cylinder" fromto="0 0 0  0 0 -0.03" size="0.002" rgba="0 0 1 0.4"/>
+    </body> -->
+
+
+
+
 
         </body>
+
+
+
     </worldbody>
 </mujoco>
