@@ -243,40 +243,37 @@ def run_with_control():
     # ── Setup renderer ────────────────────────────────────────────
     renderer = mujoco.Renderer(model, height=480, width=640)
 
-    # ── Get cam3 extrinsics (fixed camera, so get once) ───────────
+    # ── Reset to initial state for clean ArUco image ─────────────
+    # Block initial pos in XML (z=0.1) is already near floor.
+    # At t=0 the arm is upright and clear of both markers.
+    mujoco.mj_resetData(model, data)
+
+    # ── Render camera frame ───────────────────────────────────────
     mujoco.mj_forward(model, data)
     cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "base_cam_3")
-    R_cam  = data.cam_xmat[cam_id].reshape(3, 3).copy()
-    t_cam  = data.cam_xpos[cam_id].copy()
-
-    # ── Localize block from camera ────────────────────────────────
+    R_cam_nominal = data.cam_xmat[cam_id].reshape(3, 3).copy()
+    t_cam_nominal = data.cam_xpos[cam_id].copy()
     renderer.update_scene(data, camera="base_cam_3")
     image_rgb = renderer.render()
     image_bgr = image_rgb[:, :, ::-1]  # RGB → BGR for OpenCV
     cv2.imwrite("rendered_view.png", image_bgr)  # save for debugging
 
-    target_pos_est = localize_block(image_bgr, R_cam, t_cam, fovy=120, img_w=640, img_h=480)
-    if target_pos_est is None:
-        print("Block not detected! Saving debug image...")
-        cv2.imwrite("debug_detection.png", image_bgr)
-        return
-    print(f"Estimated block position from camera: {np.round(target_pos_est, 4)}")
-    target_pos = [0.25, 0.25, 0.1]
-
-    if target_pos_est is None:
-        print("Block not detected! Check debug_detection.png")
-        return  # ← add this guard before any np.round
-        
-
-    if target_pos is None:
-        print("Block not detected in camera view!")
+    # ── Localize block using ArUco markers as reference ──────────
+    target_pos_world, target_pos_base = localize_block_aruco(
+        image_bgr, R_cam_nominal, t_cam_nominal, fovy=120, img_w=640, img_h=480
+    )
+    if target_pos_world is None:
+        print("Block not detected via ArUco pipeline! Check debug_aruco.png / debug_detection.png")
         return
 
-    # ── Validation: compare against ground truth in sim ──────────
+    target_pos = target_pos_world  # IK operates in world frame
+
+    # ── Validation: compare against ground truth ──────────────────
     gt_pos = get_body_pos(data, "box_block")
-    print(f"Target pos center of Body: {np.round(target_pos, 4)}")
-    print(f"Ground truth origin of Body  : {np.round(gt_pos, 4)}")
-    print(f"Localization error: {np.linalg.norm(target_pos - gt_pos):.4f} m")
+    print(f"[GT]  Block world pos (sim)  : {np.round(gt_pos,          4)}")
+    print(f"[EST] Block world pos        : {np.round(target_pos,       4)}")
+    print(f"[EST] Block wrt robot base   : {np.round(target_pos_base,  4)}")
+    print(f"[ERR] Localization error     : {np.linalg.norm(target_pos - gt_pos):.4f} m")
 
     # ── rest is same as before ────────────────────────────────────
     reachable, dist = is_reachable(target_pos)
